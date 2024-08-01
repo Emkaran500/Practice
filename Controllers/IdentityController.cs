@@ -12,7 +12,6 @@ using Exam.Options;
 using Exam.Entity;
 
 [ApiController]
-[Route("/api/[controller]/[action]")]
 public class IdentityController : ControllerBase
 {
     private readonly JwtOptions jwtOptions;
@@ -69,6 +68,7 @@ public class IdentityController : ControllerBase
             issuer: jwtOptions.Issuer,
             audience: jwtOptions.Audience,
             claims: claims,
+            expires: DateTime.Now.AddYears(1),
             signingCredentials: signingCredentials
         );
 
@@ -85,7 +85,7 @@ public class IdentityController : ControllerBase
         var newUser = new User() {
             Email = dto.Email,
             UserName = dto.Username,
-            AvatarUrl = dto.AvatarUrl
+            AvatarUrl = "https://emilbabayevstorage.blob.core.windows.net/emilcontainer/default.jpg"
         };
 
         var result = await userManager.CreateAsync(newUser, dto.Password);
@@ -94,6 +94,10 @@ public class IdentityController : ControllerBase
             return base.BadRequest(result.Errors);
         }
 
+        if ((await roleManager.RoleExistsAsync("user")) == false)
+        {
+            await roleManager.CreateAsync(new IdentityRole("user"));
+        }
         await userManager.AddToRoleAsync(newUser, "user");
 
         return Ok();

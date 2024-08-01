@@ -5,11 +5,46 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddControllersWithViews();
+
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+        {
+            options.SwaggerDoc("v1", new OpenApiInfo()
+            {
+                Title = "Exam Swagger",
+                Version = "v1",
+            });
+
+            options.AddSecurityDefinition(
+                name: JwtBearerDefaults.AuthenticationScheme,
+                securityScheme: new OpenApiSecurityScheme()
+                {
+                    Description = "Input yout JWT token here:",
+                    In = ParameterLocation.Header,
+                    Name = "Authorization",
+                    Type = SecuritySchemeType.Http,
+                    Scheme = JwtBearerDefaults.AuthenticationScheme,
+                });
+
+            options.AddSecurityRequirement(
+                new OpenApiSecurityRequirement() {
+                {
+                    new OpenApiSecurityScheme() {
+                        Reference = new OpenApiReference() {
+                            Id = JwtBearerDefaults.AuthenticationScheme,
+                            Type = ReferenceType.SecurityScheme
+                        }
+                    },
+                    new string[] {}
+                }
+                }
+            );
+        });
 
 builder.Services.AddDbContext<MyDbContext>(options =>
     {
@@ -49,7 +84,12 @@ var jwtSection = builder.Configuration.GetSection("Jwt");
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+app.UseHttpsRedirection();
+app.MapControllers();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
